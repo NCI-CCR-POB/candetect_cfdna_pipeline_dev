@@ -1,0 +1,141 @@
+##############################
+###   Configuration Yaml   ###
+##############################
+
+###   Parameters Intended To Be Common Across Workflows    ###
+
+blklist: "/data/ShernLiquidBx/ref/hg38-blacklist.v2.bed"
+data_dir: "/data/CCRCCDI/analysis/ccrtegs65/Analysis_final_test/test_results"
+fasta_base: "GCA_000001405.15_GRCh38_no_alt_analysis_set"
+genome_fasta: "/data/ShernLiquidBx/ref/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna"
+ref_dir: "/data/ShernLiquidBx/ref"
+threads: 4
+raw_fastq: "/data/CCRCCDI/analysis/ccrtegs65/Analysis_final_test/fastq"
+frag_bams: "/data/CCRCCDI/analysis/ccrtegs65/Analysis_final_test/test_results/analysis/cfdna_wgs/bams"
+gc5mb: "/data/ShernLiquidBx/candetect_cfdna_pipeline/ref/gc5mb.bed"
+#picardpath: "$PICARDJARPATH/picard.jar" #Path to picard
+tmp: "/data/CCRCCDI/analysis/ccrtegs65/Analysis_final_test/test_results/tmp"
+
+# Sequencing parameters
+seq_params:
+  read_type: "PE"  # PE for paired-end, SE for single-end
+  read_length: 150 # Length of each read
+
+### Define what paired end reads using for Xgen ###
+PE1: "R1"
+PE2: "R2"
+
+### Library lists and sample Annotations#samples: "/data/CCRCCDI/analysis/ccrtegs65/Analysis_SARC031/input/input_libraries.tsv"
+samples: "/data/CCRCCDI/analysis/ccrtegs65/Analysis_final_test/input/input_libraries.tsv"
+cohorts: ["PN","AN","MPNST"]   #["OTHER","MPNST"]
+metadata_file: "none" #Option for use if multiple cycles or timepoints. TSV with column names for library name, cohort, cycle. Enter "none" to ignore in dependent scripts
+
+
+### Do previous models exist or would you like to train a new model? ####
+# Three modes per workflow:
+#   Mode 1 (train new):     existing_*_model = "no",  existing_*_scores_dir = "no"
+#   Mode 2 (validate):      existing_*_model = "/path/to/model/", existing_*_scores_dir = "no"
+#                           Applies existing model to new samples and computes a new AUC.
+#   Mode 3 (apply only):    existing_*_model = "/path/to/model/", existing_*_scores_dir = "/path/to/scores/"
+#                           Applies existing model and existing cutpoints — no new AUC generated.
+#                           Outputs predicted class (cohort A or B) per sample.
+#existing_nmf_model: "/data/CCRCCDI/analysis/ccrtegs65/Analysis_final_test/candetect_cfdna_pipeline/nf1_training_set/analysis/cfdna_wgs/nmf/model/PN_v_MPNST.n=18.pkl" # "no" or path to directory with model .pkl(s) e.g. "/path/to/nmf/model/"
+#existing_delfi_model: "/data/CCRCCDI/analysis/ccrtegs65/Analysis_final_test/candetect_cfdna_pipeline/nf1_training_set/analysis/cfdna_wgs/bin_wise_fragmentomics/model/model/PN_v_MPNST.pkl" # "no" or path to directory with model .pkl(s) e.g. "/path/to/bin_wise_fragmentomics/model/"
+#existing_motif_model: "/data/CCRCCDI/analysis/ccrtegs65/Analysis_final_test/candetect_cfdna_pipeline/nf1_training_set/analysis/cfdna_wgs/features/fprofile_model/fprofile_model.pkl"  #"/data/CCRCCDI/analysis/ccrtegs65/nf1_fragmentomics_data_11-3-23/motifs/model/PN_v_MPNST.pkl" # "no" or path to directory with fprofile_model.pkl e.g. "/path/to/features/fprofile_model/"
+existing_nmf_model: "/data/CCRCCDI/analysis/ccrtegs65/Analysis_final_test/candetect_cfdna_pipeline/nf1_training_set/analysis/cfdna_wgs/nmf/model" # "no" or path to directory with model .pkl(s) e.g. "/path/to/nmf/model/"
+existing_delfi_model: "/data/CCRCCDI/analysis/ccrtegs65/Analysis_final_test/candetect_cfdna_pipeline/nf1_training_set/analysis/cfdna_wgs/bin_wise_fragmentomics/model/model" # "no" or path to directory with model .pkl(s) e.g. "/path/to/bin_wise_fragmentomics/model/"
+existing_motif_model: "/data/CCRCCDI/analysis/ccrtegs65/Analysis_final_test/candetect_cfdna_pipeline/nf1_training_set/analysis/cfdna_wgs/features/fprofile_model/fprofile_model.pkl"  #"/data/CCRCCDI/analysis/ccrtegs65/nf1_fragmentomics_data_11-3-23/motifs/model/PN_v_MPNST.pkl" # "no" or path to directory with fprofile_model.pkl e.g. "/path/to/features/fprofile_model/"
+
+# Mode 3 only: paths to the original run's scores directories (requires corresponding existing_*_model)
+existing_binwise_scores_dir: "/data/CCRCCDI/analysis/ccrtegs65/Analysis_final_test/candetect_cfdna_pipeline/nf1_training_set/analysis/cfdna_wgs/bin_wise_fragmentomics" # "no" or path to original bin_wise_fragmentomics/ dir e.g. "/path/to/bin_wise_fragmentomics/"
+existing_nmf_scores_dir:  "/data/CCRCCDI/analysis/ccrtegs65/Analysis_final_test/candetect_cfdna_pipeline/nf1_training_set/analysis/cfdna_wgs/nmf"   # "no" or path to original nmf/ dir (must contain aucs/best_med_aucs.csv and scores/) e.g. "/path/to/nmf/"
+existing_motif_scores_dir: "/data/CCRCCDI/analysis/ccrtegs65/Analysis_final_test/candetect_cfdna_pipeline/nf1_training_set/analysis/cfdna_wgs/features"   # "no" or path to original features/ dir (must contain fprofile_AUC.csv) e.g. "/path/to/features/"
+
+existing_health_gc_rds: "/data/CCRCCDI/analysis/ccrtegs65/Analysis_final_test/candetect_cfdna_pipeline/nf1_training_set/analysis/cfdna_wgs/bin_wise_fragmentomics/distros/healthy_med.rds"   # "no" or path to original features/ dir (must contain fprofile_AUC.csv) e.g. "/path/to/features/"
+existing_binwise_healthy_mean_sd: "/data/CCRCCDI/analysis/ccrtegs65/Analysis_final_test/candetect_cfdna_pipeline/nf1_training_set/analysis/cfdna_wgs/bin_wise_fragmentomics/binwise_armz_healthy_mean_sd.csv"   # "no" or path to original features/ dir (must contain fprofile_AUC.csv) e.g. "/path/to/features/"
+
+###   Unique properties from this repo   ###
+frag_repo: "/data/CCRCCDI/analysis/ccrtegs65/Analysis_final_test/candetect_cfdna_pipeline"
+frag_distro: "90_150"
+
+###   enviroment setting
+env_frag_reads: "/data/CCRCCDI/analysis/ccrtegs65/Analysis_final_test/candetect_cfdna_pipeline/envs/frag_reads.yaml"
+env_fragentomics: "/data/CCRCCDI/analysis/ccrtegs65/Analysis_final_test/candetect_cfdna_pipeline/envs/fragmentomics_py3.9.15.yaml"
+
+###Specific for DELFI.smk and frag.smk###
+cytoband: "/data/ShernLiquidBx/ref/cytoBand.txt"
+
+#### NMF ####
+histogram_width: 1000
+
+
+#IF USING AN EXISTING MODEL CHANGE MIN AND MAX TO THE NUMBER OF DESIRED COMPONENTS FROM EXISTING MODEL (e.g. both to 18):
+min_nmf_components: 18 #Maxiumum number of components for fragment size NMF, pipeline will perform NMF with 2 components up to this bound e.g. 2-20. 
+max_nmf_components: 18 #Maxiumum number of components for fragment size NMF, pipeline will perform NMF with 2 components up to this bound e.g. 2-20
+
+
+###Specific for End_motifs.smk###
+# F-profile plot appearance 
+fprofile_stacked_title: "F-profile contributions per sample" #Stacked bar plot title e.g. "F-profile contributions per sample"
+
+
+## read depth params ##
+#readCounter_script: /data/ShernLiquidBx/hmmcopy_utils/bin/readCounter
+
+## ichorCNA params ##
+ichorCNA_rscript:  /data/CCRCCDI/software/Tools/ichorCNA/ichorCNA/scripts/runIchorCNA.R
+ichorCNA_libdir: /data/CCRCCDI/software/Tools/ichorCNA/ichorCNA
+
+##################################################################
+## size selection params ##
+min_fragment_size: 90
+max_fragment_size: 150
+
+window: 1000000
+quality: 20
+chromosomes:
+  # chr1,chr2,chr3,chr4,chr5,chr6,chr7,chr8,chr9,chr10,chr11,chr12,chr13,chr14,chr15,chr16,chr17,chr18,chr19,chr20,chr21,chr22,chrX
+  chr1,chr2,chr3,chr4,chr5,chr6,chr7,chr8,chr9,chr10,chr11,chr12,chr13,chr14,chr15,chr16,chr17,chr18,chr19,chr20,chr21,chr22,chrX,chrY
+
+# must use gc wig file corresponding to same binSize (required)S
+ichorCNA_gcWig: /data/CCRCCDI/software/Tools/ichorCNA/ichorCNA/inst/extdata/gc_hg38_1000kb.wig
+# must use map wig file corresponding to same binSize (required)
+ichorCNA_mapWig:  /data/CCRCCDI/software/Tools/ichorCNA/ichorCNA/inst/extdata/map_hg38_1000kb.wig
+ichorCNA_centromere:  /data/CCRCCDI/software/Tools/ichorCNA/ichorCNA/inst/extdata/GRCh38.GCA_000001405.2_centromere_acen.txt
+# use panel matching same bin size (optional)
+ichorCNA_normalPanel: /data/CCRCCDI/software/Tools/ichorCNA/ichorCNA/inst/extdata/HD_ULP_PoN_hg38_1Mb_median_normAutosome_median.rds
+
+ichorCNA_genomeBuild:  hg38
+ichorCNA_genomeStyle:  UCSC
+# ichorCNA_chrs:  paste0('chr', c(1:22, \"X\"))
+ichorCNA_chrs:  paste0('chr', c(1:22))
+# chrs used for training ichorCNA parameters, e.g. tumor fraction. 
+ichorCNA_chrTrain:  paste0('chr', c(1:22))
+
+
+ichorCNA_estimateNormal:  TRUE
+ichorCNA_estimatePloidy:  TRUE
+ichorCNA_estimateClonality: FALSE
+# non-tumor fraction parameter restart values; higher values should be included for cfDNA
+ichorCNA_normal:  c(0.95, 0.99, 0.995, 0.999)
+# ploidy parameter restart values
+ichorCNA_ploidy:  c(2)
+# states to use for subclonal CN
+ichorCNA_scStates:  c()
+# set maximum copy number to use
+ichorCNA_maxCN:  3
+
+# control segmentation - higher (e.g. 0.9999999) leads to higher specificity and fewer segments
+# lower (e.g. 0.99) leads to higher sensitivity and more segments
+ichorCNA_txnE:  0.9999
+# control segmentation - higher (e.g. 10000000) leads to higher specificity and fewer segments
+# lower (e.g. 100) leads to higher sensitivity and more segments
+ichorCNA_txnStrength:  10000
+
+
+# # use bed file if sample has targeted regions, eg. exome data (optional)
+# ichorCNA_exons:  NULL
+# # TRUE/FALSE to include homozygous deletion state
+# ichorCNA_includeHOMD: FALSE
+# ichorCNA_plotFileType:  pdf
+# ichorCNA_plotYlim:  c(-2,4)

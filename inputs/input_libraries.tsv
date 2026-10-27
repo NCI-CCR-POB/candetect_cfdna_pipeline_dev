@@ -1,0 +1,17 @@
+library	cohort	subject	file	library_type	isolation_type	specimen
+CPM00034602	PN	CPM00034602	/data/CCRCCDI/analysis/ccrtegs65/Analysis_new/fastq/CPM00034602_R1.fastq.gz	wgs	cfdna	spec_CPM00034602
+CPM00034603	PN	CPM00034603	/data/CCRCCDI/analysis/ccrtegs65/Analysis_new/fastq/CPM00034603_R1.fastq.gz	wgs	cfdna	spec_CPM00034603
+CPM00034604	PN	CPM00034604	/data/CCRCCDI/analysis/ccrtegs65/Analysis_new/fastq/CPM00034604_R1.fastq.gz	wgs	cfdna	spec_CPM00034604
+CPM00034605	PN	CPM00034605	/data/CCRCCDI/analysis/ccrtegs65/Analysis_new/fastq/CPM00034605_R1.fastq.gz	wgs	cfdna	spec_CPM00034605
+CPM00034606	MPNST	CPM00034606	/data/CCRCCDI/analysis/ccrtegs65/Analysis_new/fastq/CPM00034606_R1.fastq.gz	wgs	cfdna	spec_CPM00034606
+CPM00034681	MPNST	CPM00034681	/data/CCRCCDI/analysis/ccrtegs65/Analysis_new/fastq/CPM00034681_R1.fastq.gz	wgs	cfdna	spec_CPM00034681
+CPM00034682	MPNST	CPM00034682	/data/CCRCCDI/analysis/ccrtegs65/Analysis_new/fastq/CPM00034682_R1.fastq.gz	wgs	cfdna	spec_CPM00034682
+CPM00034683	MPNST	CPM00034683	/data/CCRCCDI/analysis/ccrtegs65/Analysis_new/fastq/CPM00034683_R1.fastq.gz	wgs	cfdna	spec_CPM00034683
+lib060	healthy	lib060	/data/CCRCCDI/analysis/ccrtegs65/Analysis_new/fastq/3_3NC75F_R1.fastq.gz	wgs	cfdna	spec196
+lib061	healthy	lib061	/data/CCRCCDI/analysis/ccrtegs65/Analysis_new/fastq/15_15NC59F_R1.fastq.gz	wgs	cfdna	spec006
+lib065	healthy	lib065	/data/CCRCCDI/analysis/ccrtegs65/Analysis_new/fastq/11_11NC61M_R1.fastq.gz	wgs	cfdna	spec002
+lib067	healthy	lib067	/data/CCRCCDI/analysis/ccrtegs65/Analysis_new/fastq/12_12NC30F_R1.fastq.gz	wgs	cfdna	spec003
+lib072	healthy	lib072	/data/CCRCCDI/analysis/ccrtegs65/Analysis_new/fastq/2_2NC59F_R1.fastq.gz	wgs	cfdna	spec015
+lib076	healthy	lib076	/data/CCRCCDI/analysis/ccrtegs65/Analysis_new/fastq/6_6NC23F_R1.fastq.gz	wgs	cfdna	spec019
+lib080	healthy	lib080	/data/CCRCCDI/analysis/ccrtegs65/Analysis_new/fastq/13_13NC25F_R1.fastq.gz	wgs	cfdna	spec004
+lib085	healthy	lib085	/data/CCRCCDI/analysis/ccrtegs65/Analysis_new/fastq/7_7NC33M_R1.fastq.gz	wgs	cfdna	spec021

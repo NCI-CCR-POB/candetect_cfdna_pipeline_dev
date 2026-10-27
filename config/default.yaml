@@ -1,0 +1,66 @@
+##############################
+###   Configuration Yaml   ###
+##############################
+#Copy and edit this config file for all projects
+
+###   Parameters Intended To Be Common Across Workflows    ###
+blklist: ""        #e.g. "/path/to/hg38-blacklist.v2.bed"
+data_dir: ""     #e.g. "/path/to/ProjectName"
+fasta_base: ""       #e.g. "GCA_000001405.15_GRCh38_no_alt_analysis_set" DOES NOT contain path
+genome_fasta: ""        #e.g."/path/to/ref/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna"
+ref_dir: ""        #e.g."/path/to/ref" This should be the directory containing the genome_fasta above
+threads: 4
+gc5mb: ""        #e.g."/path/to/ref/gc5mb.bed"
+picardpath: "$PICARDJARPATH/picard.jar" #Path to picard
+
+# Sequencing parameters
+seq_params:
+  read_type: "PE"  # PE for paired-end, SE for single-end
+  read_length: 150 # Length of each read
+
+### Define what paired end reads using for alignment ###
+PE1: "R1" #extension for paired end 1. Default "R1"
+PE2: "R2" #extension for paired end 2. Default "R2"
+
+### Library lists and sample Annotations###
+samples: ""        #This should be a a .tsv file, e.g."/path/to/repos/candetect_cfdna_pipeline/inputs/library_list_format.tsv"
+normal_control: "Healthy" #term listed in "cohort" of library list identifying the healthy controls
+cohorts: ["Healthy"," "] #Cohort names as they appear in the library list e.g. ["Healthy","MPNST"]
+metadata_file: "none" #Option for use if multiple cycles or timepoints. TSV with column names for library name, cohort, cycle. Enter "none" to ignore in dependent scripts
+
+### Do previous models exist or would you like to train a new model? ####
+# Three modes per workflow:
+#   Mode 1 (train new):     existing_*_model = "no",  existing_*_scores_dir = "no"
+#   Mode 2 (validate):      existing_*_model = "/path/to/model/", existing_*_scores_dir = "no"
+#                           Applies existing model to new samples and computes a new AUC.
+#   Mode 3 (apply only):    existing_*_model = "/path/to/model/", existing_*_scores_dir = "/path/to/scores/"
+#                           Applies existing model and existing cutpoints — no new AUC generated.
+#                           Outputs predicted class (cohort A or B) per sample.
+existing_nmf_model: "no" # "no" or path to directory with model .pkl(s) e.g. "/path/to/nmf/model/"
+existing_delfi_model: "no" # "no" or path to directory with model .pkl(s) e.g. "/path/to/bin_wise_fragmentomics/model/"
+existing_motif_model: "no" # "no" or path to directory with fprofile_model.pkl e.g. "/path/to/features/fprofile_model/"
+
+# Mode 3 only: paths to the original run's scores directories (requires corresponding existing_*_model)
+existing_binwise_scores_dir: "no" # "no" or path to original bin_wise_fragmentomics/ dir e.g. "/path/to/bin_wise_fragmentomics/"
+existing_nmf_scores_dir: "no"     # "no" or path to original nmf/ dir (must contain aucs/best_med_aucs.csv and scores/) e.g. "/path/to/nmf/"
+existing_motif_scores_dir: "no"   # "no" or path to original features/ dir (must contain fprofile_AUC.csv) e.g. "/path/to/features/"
+
+
+###   Unique properties from this repo   ###
+frag_repo: ""         #e.g."/path/to/repos/candetect_cfdna_pipeline"
+frag_distro: "90_150" #note: bp range of cfDNA fragments (default 90bp to 150bp) for in silico size selection in non-fragmentomic analysis. Format Lowerbound_Upperbound
+
+
+###Specific for DELFI.smk and frag.smk###
+cytoband: ""          #e.g."/path/to/ref/cytoBand.txt"
+
+#### NMF ####
+histogram_width: 1000 #Width in bp of histogram output e.g. 1000
+
+#IF USING AN EXISTING MODEL CHANGE MIN AND MAX TO THE NUMBER OF DESIRED COMPONENTS FROM EXISTING MODEL (e.g. both to 18):
+min_nmf_components: 2 #Maxiumum number of components for fragment size NMF, pipeline will perform NMF with 2 components up to this bound e.g. 2-20. 
+max_nmf_components: 20 #Maxiumum number of components for fragment size NMF, pipeline will perform NMF with 2 components up to this bound e.g. 2-20
+
+###Specific for End_motifs.smk###
+# F-profile plot appearance 
+fprofile_stacked_title: "" #Stacked bar plot title e.g. "F-profile contributions per sample"
