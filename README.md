@@ -4,6 +4,12 @@ This repository contains Snakemake workflows for paired-end cell-free DNA
 whole-genome sequencing preprocessing, fragmentomics feature extraction,
 modeling, prediction, and reporting.
 
+The original workflow was developed by Taylor in
+[rtsundby/candetect_cfdna_pipeline](https://github.com/rtsundby/candetect_cfdna_pipeline).
+
+The current updates extends that workflow with integrated model/prediction entry
+points and updated cfDNA fragmentomics reporting.
+
 The current workflow produces four feature streams:
 
 - **Preprocessing and QC**: fastp, BWA alignment, duplicate removal, BAM
@@ -63,8 +69,11 @@ profile/
   config.yaml               # Snakemake cluster profile
 ref/
   cytoBand.txt, keep_5mb.bed, gc5mb.bed, hg38-blacklist.v2.bed, ...
+run_snakemake.py              # wrapper for model and prediction dry-runs/runs
 scripts/
   shell, Python, and R scripts called by the workflow rules
+submit_model.sh               # sbatch script for model training or validation
+submit_predict.sh             # sbatch script for existing-model prediction
 workflows/
   fragmentomics_model.smk   # train or validate models and make a full report
   fragmentomics_pred.smk    # apply existing models and cutpoints
@@ -245,7 +254,7 @@ max_nmf_components: 18
 Use `-m model` to dry-run the integrated modeling workflow:
 
 ```bash
-./run_snakemake.py -m model -cf config/my_run.yaml
+./run_snakemake.py -m model -cf config/my_run.yaml 
 ```
 
 Add `--rerun` to execute the model run:
@@ -318,25 +327,6 @@ Logs are written under:
 <data_dir>/logs/
 ```
 
-## Standalone workflows
-
-The integrated workflows above are the preferred entry points for full model
-or prediction runs. Individual workflows are still available when debugging one
-branch at a time:
-
-```bash
-snakemake -s workflows/frag_reads.smk --configfile config/my_run.yaml --profile profile/
-snakemake -s workflows/end_motifs.smk --configfile config/my_run.yaml --profile profile/
-snakemake -s workflows/binwise_frags.smk --configfile config/my_run.yaml --profile profile/
-snakemake -s workflows/NMF_size.smk --configfile config/my_run.yaml --profile profile/
-```
-
-Run `workflows/frag_reads.smk` first because the end-motif, bin-wise, NMF, and
-ichorCNA branches consume filtered BAMs from:
-
-```text
-<data_dir>/bams/<library>_filt.bam
-```
 
 ## Citation
 
