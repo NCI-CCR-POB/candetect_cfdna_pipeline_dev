@@ -69,16 +69,16 @@ profile/
   config.yaml               # Snakemake cluster profile
 ref/
   cytoBand.txt, keep_5mb.bed, gc5mb.bed, hg38-blacklist.v2.bed, ...
-run_snakemake.py              # wrapper for model and prediction dry-runs/runs
 scripts/
   shell, Python, and R scripts called by the workflow rules
-submit_model.sh               # sbatch script for model training or validation
-submit_predict.sh             # sbatch script for existing-model prediction
 workflows/
   fragmentomics_model.smk   # train or validate models and make a full report
   fragmentomics_pred.smk    # apply existing models and cutpoints
   frag_reads.smk            # preprocessing-only workflow
   subworkflow/*.smk         # feature, model, and prediction rule groups
+run_snakemake.py              # wrapper for model and prediction dry-runs/runs
+submit_model.sh               # sbatch script for model training or validation
+submit_predict.sh             # sbatch script for existing-model prediction
 ```
 
 ## Inputs
