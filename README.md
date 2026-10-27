@@ -183,23 +183,7 @@ existing_nmf_scores_dir: "no"
 existing_motif_scores_dir: "no"
 ```
 
-Dry-run and execute:
-
-```bash
-module load snakemake
-eval "$(command conda 'shell.bash' 'hook' 2> /dev/null)"
-
-snakemake \
-  -s workflows/fragmentomics_model.smk \
-  --configfile config/my_run.yaml \
-  --profile profile/ \
-  -np
-
-snakemake \
-  -s workflows/fragmentomics_model.smk \
-  --configfile config/my_run.yaml \
-  --profile profile/
-```
+Run with `-m model` after setting these values.
 
 ### Mode 2: validate existing models and compute new AUCs
 
@@ -218,7 +202,7 @@ existing_nmf_scores_dir: "no"
 existing_motif_scores_dir: "no"
 ```
 
-Run `workflows/fragmentomics_model.smk` as shown for Mode 1.
+Run with `-m model` after setting these values.
 
 ### Mode 3: predict with existing models and cutpoints
 
@@ -256,33 +240,27 @@ min_nmf_components: 18
 max_nmf_components: 18
 ```
 
-Dry-run and execute:
+## Run the wrapper
+
+Use `-m model` to dry-run the integrated modeling workflow:
 
 ```bash
-module load snakemake
-eval "$(command conda 'shell.bash' 'hook' 2> /dev/null)"
-
-snakemake \
-  -s workflows/fragmentomics_pred.smk \
-  --configfile config/my_run.yaml \
-  --profile profile/ \
-  -np
-
-snakemake \
-  -s workflows/fragmentomics_pred.smk \
-  --configfile config/my_run.yaml \
-  --profile profile/
-``
-
-## Run with wrapper
-
-For model training:
-
-```bash
-./run_snakemake.py  -m model  -cf config/my_run.yaml --rerun
+./run_snakemake.py -m model -cf config/my_run.yaml
 ```
 
-For sample prediction:
+Add `--rerun` to execute the model run:
+
+```bash
+./run_snakemake.py -m model -cf config/my_run.yaml --rerun
+```
+
+Use `-m predict` to dry-run the integrated prediction workflow:
+
+```bash
+./run_snakemake.py -m predict -cf config/my_run.yaml
+```
+
+Add `--rerun` to execute the prediction run:
 
 ```bash
 ./run_snakemake.py -m predict -cf config/my_run.yaml --rerun
@@ -290,42 +268,27 @@ For sample prediction:
 
 ## Run with sbatch
 
-For long runs on Biowulf, copy one of the launch templates and edit it for the
-new config:
+Use `submit_model.sh` for a model-training or validation run:
 
 ```bash
-cp submit_predict.sh launch_my_run.sh
+sbatch submit_model.sh
 ```
 
-Change these variables:
+Use `submit_predict.sh` for an existing-model prediction run:
 
 ```bash
-SMK_DIR="/path/to/candetect_cfdna_pipeline_dev"
-CONFIG_FILE="config/my_run.yaml"
+sbatch submit_predict.sh
 ```
 
-Set the Snakemake command in that file to the intended top-level workflow:
+Before submitting, update the `--configfile` argument in the selected submit
+script so it points to the run YAML you prepared:
 
 ```bash
-snakemake -s workflows/fragmentomics_model.smk --configfile "$CONFIG_FILE" --profile profile/
+--configfile config/my_run.yaml
 ```
 
-or:
-
-```bash
-snakemake -s workflows/fragmentomics_pred.smk --configfile "$CONFIG_FILE" --profile profile/
-```
-
-Then submit the edited launch file:
-
-```bash
-sbatch \
-  --mem=1g \
-  --cpus-per-task=2 \
-  --time=120:00:00 \
-  --mail-type=BEGIN,TIME_LIMIT_90,END \
-  launch_my_run.sh
-```
+`submit_model.sh` already calls `workflows/fragmentomics_model.smk`, and
+`submit_predict.sh` already calls `workflows/fragmentomics_pred.smk`.
 
 ## Main outputs
 
