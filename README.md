@@ -1,15 +1,376 @@
+# CanDetect cfDNA fragmentomics
 
-# Introduction
-This repository hosts a snakemake workflow for basic processing and fragmentomic analysis of whole-genome sequencing reads from cell-free DNA. These workflows, written by Jeff Szymanski, R. Taylor Sundby, and Alex C. Pan, were used for the following publications:
+This repository contains Snakemake workflows for paired-end cell-free DNA
+whole-genome sequencing preprocessing, fragmentomics feature extraction,
+modeling, prediction, and reporting.
 
-1.	Szymanski JJ, Sundby RT, Jones PA, Srihari D, Earland N, Harris PK, et al. Cell-free DNA ultra-low-pass whole genome sequencing to distinguish malignant peripheral nerve sheath tumor (MPNST) from its benign precursor lesion: A cross-sectional study. PLOS Medicine. 2021;18(8):e1003734-e. doi: 10.1371/JOURNAL.PMED.1003734.
+The current workflow produces four feature streams:
 
-2.	Sundby RT, Szymanski JJ, Pan A, Jones PA, Mahmood SZ, Reid OH, et al. Early detection of malignant and pre-malignant peripheral nerve tumors using cell-free DNA fragmentomics. Clin Cancer Res. 2024. Epub 20240802. doi: 10.1158/1078-0432.CCR-24-0797. PubMed PMID: 39093127.
+- **Preprocessing and QC**: fastp, BWA alignment, duplicate removal, BAM
+  filtering, FastQC, Picard/samtools QC, bamPEFragmentSize, deepTools coverage,
+  and MultiQC.
+- **End-motif profiles**: strand-aware 5-prime 4-mer extraction from filtered
+  BAMs, aggregation to motif count and fraction matrices, motif-diversity
+  scoring, and F-profile modeling.
+- **Bin-wise fragmentomics**: filtered BAM to fragment BED conversion, GC
+  normalization with healthy controls, short and long fragment counts across
+  kept 5 Mb windows, chromosome-arm z scores, ratio features, and logistic
+  modeling.
+- **Fragment-size NMF and ichorCNA**: Picard insert-size histograms, aggregate
+  30-700 bp histograms, NMF component models, 90-150 bp size-selected ichorCNA,
+  and tumor-fraction output.
 
-# Use
--   See the example configuration yaml `config/default.yaml` and wrapper workflow `inputs/library_list_format.tsv` for necessary run conditions.
--   Workflow can be run individually (Default_launch_SMK.sh) or as an integrated workflow (Default_launch_master_workflow.sh) which will run pre-processing first and then, if completed without errors, all downstream analsysis (end motifs, cfDNA size NMF, bin-wise fragmentomics) workflows in parallel.  If running individually, frag_reads.smk (pre-processing) MUST be run first.
--   In its current itteration, software is loaded from the host HPC is there is not a saved image. Snakemakes and configs can be changed to use a docker container (see `docker` and <https://hub.docker.com/repository/docker/jeszyman/cfdna_wgs/general> for software versions used in publicatons above)
--   Several reference files are required and must be downloaded seperately:
-        * Reference genome e.g. GCA_000001405.15_GRCh38_no_alt_analysis_set.fna
-        * Example cytoBand.txt, gc5mb.bed, keep_5mb.bed. hg38_chr_arms.tsv, hg38-blasklist.v2.bed, and hg39.chrom.sizes are included in `ref/` and are generated to hg38 using the healthy samples from the publications above. These may need to be re-generated for project specific needs.  
+The final report is written to:
+
+```text
+<data_dir>/analysis/cfdna_wgs/report/cfdna_wgs_report.html
+```
+
+## Key updates
+
+- Added the integrated modeling workflow `workflows/fragmentomics_model.smk`
+  for feature generation, model training or validation, AUC generation,
+  ichorCNA, combined tables, voting plots, and HTML reporting.
+- Added the integrated prediction workflow `workflows/fragmentomics_pred.smk`
+  for applying existing bin-wise, NMF, and F-profile models plus training-set
+  cutpoints to new samples.
+- Added Mode 3 cutpoint application through `scripts/apply_cutpoints.py`; this
+  mode applies existing cutpoints and writes predicted class calls without
+  recomputing ROC curves or AUC-based thresholds.
+- Updated end-motif extraction to call `scripts/extract_5p_motifs.sh` for
+  strand-aware 5-prime cfDNA 4-mers and `scripts/aggregate_motif_counts.py`
+  for motif count and fraction matrices with motif rows by library columns.
+- Added support for reusing training-set healthy-control quantities during
+  prediction with `existing_health_gc_rds` and
+  `existing_binwise_healthy_mean_sd`.
+- Added prediction-specific combined-output and report rules in
+  `workflows/combine_datasets_pred.smk`, `scripts/create_voting_heatmap_pred.R`,
+  and `scripts/create_html_report_pred.py`.
+
+## Repository layout
+
+```text
+config/
+  default.yaml              # copy and edit for each run
+  cluster.yaml              # per-rule resources used inside Snakemake files
+envs/
+  frag_reads.yaml           # conda environment for preprocessing rules
+  fragmentomics_py3.9.15.yaml
+inputs/
+  library_list_format.tsv   # sample manifest template
+profile/
+  config.yaml               # Snakemake cluster profile
+ref/
+  cytoBand.txt, keep_5mb.bed, gc5mb.bed, hg38-blacklist.v2.bed, ...
+scripts/
+  shell, Python, and R scripts called by the workflow rules
+workflows/
+  fragmentomics_model.smk   # train or validate models and make a full report
+  fragmentomics_pred.smk    # apply existing models and cutpoints
+  frag_reads.smk            # preprocessing-only workflow
+  subworkflow/*.smk         # feature, model, and prediction rule groups
+```
+
+## Inputs
+
+### FASTQs
+
+The preprocessing workflow expects paired-end FASTQs. Put the R1 FASTQ path for
+each library in the manifest `file` column; `scripts/detect_read_pairs.sh`
+locates the matching R2 file and creates standardized symlinks in:
+
+```text
+<data_dir>/fastq/
+```
+
+The read-pair tokens are controlled by `PE1` and `PE2` in the run YAML:
+
+```yaml
+PE1: "R1"
+PE2: "R2"
+```
+
+### Sample manifest
+
+Copy `inputs/library_list_format.tsv` and provide at least these columns:
+
+| column | description |
+| --- | --- |
+| `library` | Unique library ID. This becomes the sample prefix for BAMs, feature files, and scores. |
+| `cohort` | Cohort label used for pairwise model comparisons. Values must match `cohorts` in the YAML exactly. |
+| `subject` | Subject or patient ID used by longitudinal plotting. |
+| `file` | Path to the input R1 FASTQ. |
+| `library_type` | Assay label, for example `wgs`. |
+| `isolation_type` | Input molecule label, for example `cfdna`. |
+
+Additional columns, such as `specimen`, may be present and are carried through
+where downstream scripts use them.
+
+### Reference files
+
+Set the hg38 reference paths in the YAML. The current rules require:
+
+- `genome_fasta`: reference FASTA used by BWA, GC extraction, and motif
+  extraction.
+- `ref_dir`: directory containing FASTA/BWA index files and `keep_5mb.bed`.
+- `cytoband`: chromosome-arm annotations for bin-wise arm z scores.
+- `blklist`: blacklist BED used by deepTools coverage rules.
+- `gc5mb`: 5 Mb GC-content BED.
+- ichorCNA support files:
+  - `ichorCNA_gcWig`
+  - `ichorCNA_mapWig`
+  - `ichorCNA_centromere`
+  - `ichorCNA_normalPanel`
+
+Example hg38 helper files are included under `ref/`, but project-specific runs
+should point to the vetted reference directory on the analysis system.
+
+## Configure a run
+
+Start from `config/default.yaml`:
+
+```bash
+cp config/default.yaml config/my_run.yaml
+```
+
+Update these required paths first:
+
+```yaml
+data_dir: "/path/to/output/run"
+frag_repo: "/path/to/candetect_cfdna_pipeline_dev"
+samples: "/path/to/input_libraries.tsv"
+
+genome_fasta: "/path/to/ref/GCA_000001405.15_GRCh38_no_alt_analysis_set.fna"
+ref_dir: "/path/to/ref"
+cytoband: "/path/to/ref/cytoBand.txt"
+blklist: "/path/to/ref/hg38-blacklist.v2.bed"
+gc5mb: "/path/to/ref/gc5mb.bed"
+
+env_frag_reads: "/path/to/candetect_cfdna_pipeline_dev/envs/frag_reads.yaml"
+env_fragentomics: "/path/to/candetect_cfdna_pipeline_dev/envs/fragmentomics_py3.9.15.yaml"
+tmp: "/path/to/output/run/tmp"
+```
+
+Then set the cohort labels. The workflow runs every pairwise comparison in the
+order returned by `itertools.combinations(cohorts, 2)`.
+
+```yaml
+normal_control: "healthy"
+cohorts: ["healthy", "PN", "AN", "MPNST"]
+```
+
+`normal_control` must match the healthy-control label in the manifest
+`cohort` column because those libraries define the bin-wise GC summary and
+chromosome-arm mean/SD used for standardization.
+
+## Choose a model mode
+
+The bin-wise, NMF, and F-profile branches can run in three modes.
+
+### Mode 1: train new models
+
+Use this mode for a training set. The workflow trains models, chooses
+cutpoints, computes AUCs, and creates the HTML report.
+
+```yaml
+existing_nmf_model: "no"
+existing_delfi_model: "no"
+existing_motif_model: "no"
+
+existing_binwise_scores_dir: "no"
+existing_nmf_scores_dir: "no"
+existing_motif_scores_dir: "no"
+```
+
+Dry-run and execute:
+
+```bash
+module load snakemake
+eval "$(command conda 'shell.bash' 'hook' 2> /dev/null)"
+
+snakemake \
+  -s workflows/fragmentomics_model.smk \
+  --configfile config/my_run.yaml \
+  --profile profile/ \
+  -np
+
+snakemake \
+  -s workflows/fragmentomics_model.smk \
+  --configfile config/my_run.yaml \
+  --profile profile/
+```
+
+### Mode 2: validate existing models and compute new AUCs
+
+Use this mode when model files already exist but the new cohort still has
+ground-truth labels and should receive a new validation AUC.
+
+Set the model locations and leave the existing score directories as `"no"`:
+
+```yaml
+existing_nmf_model: "/path/to/training/analysis/cfdna_wgs/nmf/model"
+existing_delfi_model: "/path/to/training/analysis/cfdna_wgs/bin_wise_fragmentomics/model/model"
+existing_motif_model: "/path/to/training/analysis/cfdna_wgs/features/fprofile_model/fprofile_model.pkl"
+
+existing_binwise_scores_dir: "no"
+existing_nmf_scores_dir: "no"
+existing_motif_scores_dir: "no"
+```
+
+Run `workflows/fragmentomics_model.smk` as shown for Mode 1.
+
+### Mode 3: predict with existing models and cutpoints
+
+Use this mode for new samples where the training-set thresholds should be
+frozen. The workflow applies:
+
+- bin-wise model pickle files from `existing_delfi_model`
+- NMF model pickle files from `existing_nmf_model`
+- the F-profile pickle from `existing_motif_model`
+- bin-wise and NMF score cutpoints from the original `scores/` directories
+- the best NMF component count from
+  `<existing_nmf_scores_dir>/aucs/best_med_aucs.csv`
+- original F-profile AUC/threshold files from `existing_motif_scores_dir`
+
+Example:
+
+```yaml
+existing_nmf_model: "/path/to/training/analysis/cfdna_wgs/nmf/model"
+existing_delfi_model: "/path/to/training/analysis/cfdna_wgs/bin_wise_fragmentomics/model/model"
+existing_motif_model: "/path/to/training/analysis/cfdna_wgs/features/fprofile_model/fprofile_model.pkl"
+
+existing_binwise_scores_dir: "/path/to/training/analysis/cfdna_wgs/bin_wise_fragmentomics"
+existing_nmf_scores_dir: "/path/to/training/analysis/cfdna_wgs/nmf"
+existing_motif_scores_dir: "/path/to/training/analysis/cfdna_wgs/features"
+
+existing_health_gc_rds: "/path/to/training/bin_wise_fragmentomics/distros/healthy_med.rds"
+existing_binwise_healthy_mean_sd: "/path/to/training/bin_wise_fragmentomics/binwise_armz_healthy_mean_sd.csv"
+```
+
+When applying an NMF model with a fixed component count, set both NMF bounds to
+that count:
+
+```yaml
+min_nmf_components: 18
+max_nmf_components: 18
+```
+
+Dry-run and execute:
+
+```bash
+module load snakemake
+eval "$(command conda 'shell.bash' 'hook' 2> /dev/null)"
+
+snakemake \
+  -s workflows/fragmentomics_pred.smk \
+  --configfile config/my_run.yaml \
+  --profile profile/ \
+  -np
+
+snakemake \
+  -s workflows/fragmentomics_pred.smk \
+  --configfile config/my_run.yaml \
+  --profile profile/
+```
+
+## Run with sbatch
+
+For long runs on Biowulf, copy one of the launch templates and edit it for the
+new config:
+
+```bash
+cp Default_launch_master_workflow.sh launch_my_run.sh
+```
+
+Change these variables:
+
+```bash
+SMK_DIR="/path/to/candetect_cfdna_pipeline_dev"
+CONFIG_FILE="config/my_run.yaml"
+```
+
+Set the Snakemake command in that file to the intended top-level workflow:
+
+```bash
+snakemake -s workflows/fragmentomics_model.smk --configfile "$CONFIG_FILE" --profile profile/
+```
+
+or:
+
+```bash
+snakemake -s workflows/fragmentomics_pred.smk --configfile "$CONFIG_FILE" --profile profile/
+```
+
+Then submit the edited launch file:
+
+```bash
+sbatch \
+  --mem=1g \
+  --cpus-per-task=2 \
+  --time=120:00:00 \
+  --mail-type=BEGIN,TIME_LIMIT_90,END \
+  launch_my_run.sh
+```
+
+## Main outputs
+
+All primary outputs are written under:
+
+```text
+<data_dir>/analysis/cfdna_wgs/
+```
+
+Important subdirectories and files include:
+
+| path | contents |
+| --- | --- |
+| `bin_wise_fragmentomics/` | Bin-wise features, probabilities, scores, and plots. |
+| `features/combined_motif_counts_matrix.tsv` | End-motif count matrix, with motif rows and library columns. |
+| `features/combined_motif_fractions_matrix.tsv` | End-motif fraction matrix, with motif rows and library columns. |
+| `features/fprofiles.tsv` | F-profile contribution matrix per library. |
+| `nmf/` | Insert-size histograms, NMF models, NMF probabilities, best component counts, and NMF scores. |
+| `ichorCNA/tf.csv` | ichorCNA tumor-fraction summary used by the combined report. |
+| `combined_dataset_<cohort1>_v_<cohort2>.csv` | Per-comparison merged fragmentomics and ichorCNA metrics. |
+| `plots/voting/` | Majority-vote heatmaps and majority-vote CSVs. |
+| `report/cfdna_wgs_report.html` | Final interactive HTML report. |
+
+Logs are written under:
+
+```text
+<data_dir>/logs/
+```
+
+## Standalone workflows
+
+The integrated workflows above are the preferred entry points for full model
+or prediction runs. Individual workflows are still available when debugging one
+branch at a time:
+
+```bash
+snakemake -s workflows/frag_reads.smk --configfile config/my_run.yaml --profile profile/
+snakemake -s workflows/end_motifs.smk --configfile config/my_run.yaml --profile profile/
+snakemake -s workflows/binwise_frags.smk --configfile config/my_run.yaml --profile profile/
+snakemake -s workflows/NMF_size.smk --configfile config/my_run.yaml --profile profile/
+```
+
+Run `workflows/frag_reads.smk` first because the end-motif, bin-wise, NMF, and
+ichorCNA branches consume filtered BAMs from:
+
+```text
+<data_dir>/bams/<library>_filt.bam
+```
+
+## Citation
+
+If you use this workflow, please cite:
+
+1. Szymanski JJ, Sundby RT, Jones PA, Srihari D, Earland N, Harris PK, et al.
+   Cell-free DNA ultra-low-pass whole genome sequencing to distinguish
+   malignant peripheral nerve sheath tumor from its benign precursor lesion: a
+   cross-sectional study. *PLOS Medicine*. 2021;18(8):e1003734.
+   doi:10.1371/JOURNAL.PMED.1003734
+
+2. Sundby RT, Szymanski JJ, Pan A, Jones PA, Mahmood SZ, Reid OH, et al. Early
+   detection of malignant and pre-malignant peripheral nerve tumors using
+   cell-free DNA fragmentomics. *Clinical Cancer Research*. 2024.
+   doi:10.1158/1078-0432.CCR-24-0797
