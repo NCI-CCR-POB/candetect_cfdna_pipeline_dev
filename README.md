@@ -16,8 +16,9 @@ The current workflow produces four feature streams:
   normalization with healthy controls, short and long fragment counts across
   kept 5 Mb windows, chromosome-arm z scores, ratio features, and logistic
   modeling.
-- **Fragment-size NMF and ichorCNA**: Picard insert-size histograms, aggregate
-  30-700 bp histograms, NMF component models, 90-150 bp size-selected ichorCNA,
+- **Fragment-size NMF**: Picard insert-size histograms, aggregate
+  30-700 bp histograms, NMF component models
+- **CNA and tumor fraction with ichorCNA**:  90-150 bp size-selected ichorCNA,
   and tumor-fraction output.
 
 The final report is written to:
@@ -97,7 +98,7 @@ Copy `inputs/library_list_format.tsv` and provide at least these columns:
 | column | description |
 | --- | --- |
 | `library` | Unique library ID. This becomes the sample prefix for BAMs, feature files, and scores. |
-| `cohort` | Cohort label used for pairwise model comparisons. Values must match `cohorts` in the YAML exactly. |
+| `cohort` | Cohort label used for pairwise model comparisons. Values must match `cohorts` in the YAML exactly for training set. |
 | `subject` | Subject or patient ID used by longitudinal plotting. |
 | `file` | Path to the input R1 FASTQ. |
 | `library_type` | Assay label, for example `wgs`. |
@@ -271,6 +272,20 @@ snakemake \
   -s workflows/fragmentomics_pred.smk \
   --configfile config/my_run.yaml \
   --profile profile/
+``
+
+## Run with wrapper
+
+For model training:
+
+```bash
+./run_snakemake.py  -m model  -cf config/my_run.yaml --rerun
+```
+
+For sample prediction:
+
+```bash
+./run_snakemake.py -m predict -cf config/my_run.yaml --rerun
 ```
 
 ## Run with sbatch
@@ -279,7 +294,7 @@ For long runs on Biowulf, copy one of the launch templates and edit it for the
 new config:
 
 ```bash
-cp Default_launch_master_workflow.sh launch_my_run.sh
+cp submit_predict.sh launch_my_run.sh
 ```
 
 Change these variables:
