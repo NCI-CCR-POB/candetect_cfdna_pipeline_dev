@@ -6,10 +6,6 @@
 #SBATCH --time=120:00:00
 #SBATCH --no-requeue
 
-module load mamba_install
-module load snakemake
-source /home/wuy24/bin/myconda
-export MAMBA_NO_BANNER=1
 
 mkdir -p logs
 mkdir -p stats
