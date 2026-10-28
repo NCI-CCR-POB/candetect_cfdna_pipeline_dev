@@ -58,7 +58,7 @@ The final report is written to:
 
 ```text
 config/
-  default.yaml              # copy and edit for each run
+  nf1_training_set.yaml     # copy and edit for each run
   cluster.yaml              # per-rule resources used inside Snakemake files
 envs/
   frag_reads.yaml           # conda environment for preprocessing rules
