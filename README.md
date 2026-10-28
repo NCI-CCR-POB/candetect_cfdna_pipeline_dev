@@ -65,8 +65,6 @@ envs/
   fragmentomics_py3.9.15.yaml
 inputs/
   library_list_format.tsv   # sample manifest template
-profile/
-  config.yaml               # Snakemake cluster profile
 ref/
   cytoBand.txt, keep_5mb.bed, gc5mb.bed, hg38-blacklist.v2.bed, ...
 scripts/
